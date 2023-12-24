@@ -6,11 +6,15 @@ const user = require("../Models/Auth")
 const bcrypt = require("bcrypt")
 const jwt = require("jsonwebtoken")
 const cookie = require("cookie-parser")
+const authmiddleware = require("../Middleware/Authmiddleware")
+
 
 app.use(cookie())
 
+
 Route.post("/register",   async (req, res)=>{
     const {username, email, phone, password } = req.body
+
 
     if (!username || !email || !phone || !password) {
         return res.json({"msg":"All fields are mandatory"})
@@ -26,11 +30,11 @@ Route.post("/register",   async (req, res)=>{
 
         const hashpssword = await bcrypt.hash(password,10)
         const createuser = await user.create({
-            username,
-            email,
-            phone,
-            password : hashpssword
-        })
+          username,
+          email,
+          phone,
+        password : hashpssword
+         } )
 
         if (createuser) {
             return res.json("User Registered successfully")
@@ -75,9 +79,47 @@ const verifyToken =  jwt.verify(userToken, "ABCD")
 const useerid= verifyToken.userid;
 
 const checkusername = await user.findById(useerid);
-
 res.send(checkusername.username)
 
 
+
+
+
 })
+
+//ChatApp/searchuser
+
+Route.post("/searchuser", async(req, res)=>{
+
+    
+    //? {
+     //   $or: [
+       //   { name: { $regex: req.query.search, $options: "i" } },
+         // { email: { $regex: req.query.search, $options: "i" } },
+        //],
+     // }
+    //: {};
+    
+
+
+
+const userquery = req.query.user
+
+const token = req.cookies.Token;
+
+console.log(userquery)
+
+const verifytoken = await jwt.verify(token, "ABCD")
+const userId = verifytoken.userid
+
+const users =  await user.find({username:userquery}). find({_id:{$ne:userId}}).collation({locale:"en", strength:2})
+
+res.send(users)
+
+
+})
+
+
+
+
 module.exports = Route
